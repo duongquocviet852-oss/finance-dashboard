@@ -408,7 +408,7 @@ function finMonthOf(dateStr){
   const start = new Date(y, m, 26, 0, 0, 0), end = new Date(y, m+1, 25, 23, 59, 59);
   return {start, end, label: monthLabel(end)};
 }
-function currentFY(){ const n = new Date(); return (n.getMonth()>1 || (n.getMonth()===1 && n.getDate()>=25)) ? n.getFullYear() : n.getFullYear()-1; }
+function currentFY(){ const n = new Date(); return (n.getMonth()>1 || (n.getMonth()===1 && n.getDate()>=26) ? n.getFullYear() : n.getFullYear()-1; }
 let selectedFY = currentFY();
 let selectedMonthIdx = null;
 
