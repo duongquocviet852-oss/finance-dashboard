@@ -619,7 +619,7 @@ function renderNetWorthBar() {
   const nw = calcNetWorth();
   document.getElementById('nwTotal').textContent = fmtB(nw.total);
   const last = state.netWorthHistory.slice(-1)[0];
-  document.getElementById('nwUpdated').textContent = last ? `Snapshot cuối: ${fmtDateVN(last.date)}` : 'Chưa có snapshot';
+  const nwUpEl = document.getElementById('nwUpdated'); if(nwUpEl) nwUpEl.textContent = last ? `Snapshot cuối: ${fmtDateVN(last.date)}` : 'Chưa có snapshot';
   const segs = [
     { label:'Tiết kiệm', val:nw.sav, color:'var(--accent)' },
     { label:'CK', val:nw.ck, color:'var(--accent3)' },
