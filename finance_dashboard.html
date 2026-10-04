@@ -404,8 +404,8 @@ function monthLabel(end){ return `T${end.getMonth()+1}/${String(end.getFullYear(
 function finMonthOf(dateStr){
   const d = dateStr ? parseD(dateStr) : new Date();
   let y = d.getFullYear(), m = d.getMonth();
-  if (d.getDate() < 25) m -= 1;
-  const start = new Date(y, m, 25, 0, 0, 0), end = new Date(y, m+1, 24, 23, 59, 59);
+  if (d.getDate() < 26) m -= 1;
+  const start = new Date(y, m, 26, 0, 0, 0), end = new Date(y, m+1, 25, 23, 59, 59);
   return {start, end, label: monthLabel(end)};
 }
 function currentFY(){ const n = new Date(); return (n.getMonth()>1 || (n.getMonth()===1 && n.getDate()>=25)) ? n.getFullYear() : n.getFullYear()-1; }
