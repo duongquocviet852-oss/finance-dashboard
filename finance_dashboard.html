@@ -426,7 +426,7 @@ function rangeTxt(r){ const f = d => `${String(d.getDate()).padStart(2,'0')}/${S
 function selectFY(fy){
   selectedFY = fy; selectedMonthIdx = null;
   [2026,2027].forEach(y => { const b = $('fyBtn'+y); if (b) b.className = 'btn btn-sm '+(y===fy?'btn-green':'btn-muted'); });
-  setText('fyRangeLabel', `25/02/${fy} – 24/02/${fy+1}`);
+  setText('fyRangeLabel', `26/02/${fy} – 25/02/${fy+1}`);
   renderOverview();
 }
 
