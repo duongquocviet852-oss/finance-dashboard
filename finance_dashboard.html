@@ -349,7 +349,7 @@ function getFYMonths(fy){
   const out=[];
   for(let i=0;i<12;i++){
     const start=new Date(fy,1+i,25,0,0,0), end=new Date(fy,2+i,24,23,59,59);
-    out.push({start,end,label:`T${start.getMonth()+1}/${String(start.getFullYear()).slice(2)}`});
+    out.push({start,end,label:`T${end.getMonth()+1}/${String(end.getFullYear()).slice(2)}`});
   }
   return out;
 }
