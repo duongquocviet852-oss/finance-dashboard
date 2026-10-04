@@ -1,35 +1,25 @@
-const CACHE = 'finance-v1';
-const ASSETS = [
-  '/',
-  '/finance_dashboard.html',
-  'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js',
-  'https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@300;400;500;600&display=swap'
-];
+const CACHE = 'finance-v2';
 
-self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE).then(cache => cache.addAll(ASSETS)).catch(() => {})
-  );
-  self.skipWaiting();
-});
+self.addEventListener('install', e => { self.skipWaiting(); });
 
 self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    )
+    caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
   );
   self.clients.claim();
 });
 
+// Network-first: always fetch latest code/data, fall back to cache when offline
 self.addEventListener('fetch', e => {
-  // Network first for Supabase (always fresh data)
-  if (e.request.url.includes('supabase.co')) {
-    e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
-    return;
-  }
-  // Cache first for static assets
+  if (e.request.method !== 'GET') return;
+  if (e.request.url.includes('supabase.co')) return;
   e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request))
+    fetch(e.request)
+      .then(res => {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
+        return res;
+      })
+      .catch(() => caches.match(e.request))
   );
 });
