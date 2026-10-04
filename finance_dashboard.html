@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0f1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Finance">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<title>Finance Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@300;400;500;600&display=swap');
+  :root {
+    --bg:#0f1117; --panel:#181c27; --border:#252a38;
+    --accent:#4ade80; --accent2:#f59e0b; --accent3:#60a5fa; --accent4:#a78bfa;
+    --danger:#f87171; --muted:#6b7280; --text:#e5e7eb; --text2:#9ca3af;
+    --mono:'IBM Plex Mono',monospace; --sans:'Inter',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;min-height:100vh;}
+  /* HEADER */
+  .header{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid var(--border);}
+  .header-title{font-family:var(--mono);font-size:13px;color:var(--accent);letter-spacing:.08em;text-transform:uppercase;}
+  .week-nav{display:flex;align-items:center;gap:8px;}
+  .week-nav button{background:var(--panel);border:1px solid var(--border);color:var(--text2);padding:5px 12px;border-radius:4px;cursor:pointer;font-family:var(--mono);font-size:12px;}
+  .week-nav button:hover{border-color:var(--accent);color:var(--accent);}
+  .week-label{font-family:var(--mono);font-size:12px;color:var(--text2);min-width:180px;text-align:center;}
+  .fy-badge{font-family:var(--mono);font-size:11px;color:var(--accent2);background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);padding:3px 10px;border-radius:4px;}
+  /* TABS */
+  .tabs{display:flex;border-bottom:1px solid var(--border);padding:0 24px;}
+  .tab{padding:12px 20px;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;}
+  .tab:hover{color:var(--text);}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+  /* MAIN */
+  .main{padding:24px;}
+  .section{display:none;}
+  .section.active{display:block;}
+  /* KPI */
+  .kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:22px;}
+  .kpi{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:16px 18px;}
+  .kpi.highlight{border-color:rgba(74,222,128,.35);background:rgba(74,222,128,.04);}
+  .kpi-label{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px;}
+  .kpi-value{font-family:var(--mono);font-size:19px;font-weight:600;}
+  .kpi-sub{font-size:11px;color:var(--muted);margin-top:3px;}
+  .green{color:var(--accent);} .amber{color:var(--accent2);} .red{color:var(--danger);} .blue{color:var(--accent3);} .purple{color:var(--accent4);}
+  /* GRID */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px;}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:18px;}
+  .card-title{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;}
+  .chart-wrap{position:relative;height:220px;}
+  .chart-wrap-lg{position:relative;height:260px;}
+  /* FORM */
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+  .form-block{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:18px;}
+  .form-title{font-size:13px;font-weight:600;margin-bottom:14px;}
+  .field{margin-bottom:11px;}
+  .field label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;}
+  .field input,.field select{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 11px;border-radius:5px;font-size:13px;font-family:var(--sans);}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--accent);}
+  .field select option{background:var(--bg);}
+  .btn{padding:8px 18px;border-radius:5px;border:none;cursor:pointer;font-size:13px;font-weight:600;font-family:var(--sans);}
+  .btn-green{background:var(--accent);color:#000;}
+  .btn-red{background:var(--danger);color:#fff;}
+  .btn-amber{background:var(--accent2);color:#000;}
+  .btn-blue{background:var(--accent3);color:#000;}
+  .btn-muted{background:var(--border);color:var(--text2);}
+  .btn:hover{opacity:.85;}
+  /* TABLE */
+  .tbl{width:100%;border-collapse:collapse;}
+  .tbl th{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:7px 11px;text-align:left;border-bottom:1px solid var(--border);}
+  .tbl td{padding:9px 11px;border-bottom:1px solid var(--border);font-size:13px;}
+  .tbl tr:last-child td{border-bottom:none;}
+  .tbl tr:hover td{background:rgba(255,255,255,.02);}
+  .tbl tfoot td{padding:9px 11px;border-top:1px solid var(--border);font-size:13px;}
+  .tag{display:inline-block;padding:2px 8px;border-radius:3px;font-size:11px;font-weight:600;}
+  .tag-income{background:rgba(74,222,128,.15);color:var(--accent);}
+  .tag-expense{background:rgba(248,113,113,.15);color:var(--danger);}
+  .tag-cat{background:rgba(96,165,250,.12);color:var(--accent3);font-size:11px;padding:2px 7px;border-radius:3px;}
+  .del-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 5px;}
+  .del-btn:hover{color:var(--danger);}
+  .mono{font-family:var(--mono);}
+  .pos{color:var(--accent);} .neg{color:var(--danger);} .neu{color:var(--accent3);}
+  /* INV */
+  .inv-section{margin-bottom:22px;}
+  .inv-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+  .inv-title{font-size:13px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;}
+  .inline-form{display:none;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:12px;}
+  /* RENTAL */
+  .rental-grid{display:grid;grid-template-columns:260px 1fr;gap:16px;}
+  .rental-prop{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:14px;cursor:pointer;margin-bottom:8px;transition:border-color .15s;}
+  .rental-prop:hover,.rental-prop.selected{border-color:var(--accent3);}
+  /* NET WORTH */
+  .nw-bar{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;}
+  .nw-total{font-family:var(--mono);font-size:28px;font-weight:600;color:var(--accent);}
+  .nw-seg{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);}
+  .nw-dot{width:10px;height:10px;border-radius:50%;}
+  .snapshot-row{display:flex;align-items:center;gap:10px;margin-left:auto;}
+  /* SCROLLBAR */
+  ::-webkit-scrollbar{width:5px;height:5px;}
+  ::-webkit-scrollbar-track{background:var(--bg);}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+  .tr{text-align:right;} .tc{text-align:center;}
+  .mt12{margin-top:12px;} .mt20{margin-top:20px;}
+  .empty{text-align:center;color:var(--muted);padding:32px;font-size:13px;}
+  .sep{border:none;border-top:1px solid var(--border);margin:18px 0;}
+  .small{font-size:11px;color:var(--muted);}
+</style>
+</head>
+<body>
+<div class="header">
+  <div style="display:flex;align-items:center;gap:16px;">
+    <div class="header-title">⬡ Finance Dashboard</div>
+    <div class="fy-badge" id="fyBadge">FY —</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span id="syncStatus" style="font-size:11px;font-family:var(--mono);"></span>
+    <button class="btn btn-muted" style="font-size:11px;padding:4px 10px" onclick="exportJSON()">⬇ Export</button>
+    <label class="btn btn-muted" style="font-size:11px;padding:4px 10px;cursor:pointer">⬆ Import<input type="file" accept=".json" style="display:none" onchange="importJSON(this)"></label>
+  </div>
+  <div class="week-nav">
+    <button onclick="changeWeek(-1)">◀</button>
+    <div class="week-label" id="weekLabel">—</div>
+    <button onclick="changeWeek(1)">▶</button>
+    <button onclick="goCurrentWeek()">Tuần này</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab(0)">Tổng quan</div>
+  <div class="tab" onclick="showTab(1)">Thu / Chi</div>
+  <div class="tab" onclick="showTab(2)">Đầu tư</div>
+  <div class="tab" onclick="showTab(3)">Cho thuê</div>
+</div>
+
+<div class="main">
+
+<!-- ═══════════ TAB 0: TỔNG QUAN ═══════════ -->
+<div class="section active" id="s0">
+
+  <!-- FY SELECTOR + SNAPSHOT -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
+    <div style="display:flex;gap:8px;">
+      <button id="fyBtn2026" class="btn btn-green" style="font-size:12px;" onclick="selectFY(2026)">FY 2026</button>
+      <button id="fyBtn2027" class="btn btn-muted" style="font-size:12px;" onclick="selectFY(2027)">FY 2027</button>
+      <span style="font-size:11px;color:var(--muted);align-self:center;margin-left:4px;" id="fyRangeLabel"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span class="small" id="nwUpdated"></span>
+      <button class="btn btn-green" style="font-size:12px;" onclick="takeSnapshot()">📸 Snapshot</button>
+    </div>
+  </div>
+
+  <!-- LEVEL 1: 3 BIG NUMBERS -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:18px;" id="l1Row"></div>
+
+  <!-- LEVEL 2: 12-MONTH TABLE -->
+  <div class="card" style="margin-bottom:18px;padding:16px;overflow-x:auto;">
+    <div class="card-title" id="monthTableTitle">12 tháng TC</div>
+    <table class="tbl" id="monthTable" style="min-width:700px;">
+      <thead id="monthTableHead"></thead>
+      <tbody id="monthTableBody"></tbody>
+    </table>
+  </div>
+
+  <!-- LEVEL 3: SELECTED MONTH DETAIL -->
+  <div id="l3Detail" style="display:none;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;">
+      <div class="card" id="l3Left"></div>
+      <div class="card" id="l3Right"></div>
+    </div>
+  </div>
+
+  <!-- ASSET BREAKDOWN + NET WORTH HISTORY -->
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">Cơ cấu Tài sản Ròng</div>
+      <div id="nwSegs" style="margin-bottom:12px;display:flex;gap:16px;flex-wrap:wrap;"></div>
+      <div class="chart-wrap" style="height:180px;"><canvas id="chartAsset"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Tăng trưởng Tài sản Ròng</div>
+      <div class="chart-wrap" style="height:220px;"><canvas id="chartNetWorth"></canvas></div>
+    </div>
+  </div>
+
+  <!-- RECENT TX -->
+  <div class="card" style="margin-top:18px;">
+    <div class="card-title">Giao dịch gần nhất</div>
+    <table class="tbl"><thead><tr><th>Ngày</th><th>Loại</th><th>Hạng mục</th><th>Ghi chú</th><th class="tr">Số tiền</th></tr></thead>
+    <tbody id="recentBody"></tbody></table>
+  </div>
+</div>
+
+<!-- ═══════════ TAB 1: THU CHI ═══════════ -->
+<div class="section" id="s1">
+  <div class="form-row">
+    <div class="form-block" style="border-top:3px solid var(--accent)">
+      <div class="form-title green">+ Nhập Thu</div>
+      <div class="field"><label>Ngày</label><input type="date" id="incDate"></div>
+      <div class="field"><label>Hạng mục</label>
+        <select id="incCat">
+          <option>💼 Lương</option><option>🏠 Cho thuê</option><option>🎯 Thưởng</option>
+          <option>📈 Cổ tức / CCQ</option><option>💻 Freelance</option><option>📦 Khác</option>
+        </select>
+      </div>
+      <div class="field"><label>Số tiền (VNĐ)</label><input type="number" id="incAmount" placeholder="0"></div>
+      <div class="field"><label>Ghi chú</label><input type="text" id="incNote" placeholder="Mô tả..."></div>
+      <button class="btn btn-green" onclick="addTx('income')">Thêm khoản thu</button>
+    </div>
+    <div class="form-block" style="border-top:3px solid var(--danger)">
+      <div class="form-title red">− Nhập Chi</div>
+      <div class="field"><label>Ngày</label><input type="date" id="expDate"></div>
+      <div class="field"><label>Hạng mục</label>
+        <select id="expCat">
+          <option>🍜 Ăn uống</option><option>🏠 Nhà ở</option><option>🚗 Đi lại</option>
+          <option>🎬 Giải trí</option><option>🏥 Sức khỏe</option><option>🛍 Mua sắm</option>
+          <option>📊 Đầu tư</option><option>📦 Khác</option>
+        </select>
+      </div>
+      <div class="field"><label>Số tiền (VNĐ)</label><input type="number" id="expAmount" placeholder="0"></div>
+      <div class="field"><label>Ghi chú</label><input type="text" id="expNote" placeholder="Mô tả..."></div>
+      <button class="btn btn-red" onclick="addTx('expense')">Thêm khoản chi</button>
+    </div>
+  </div>
+
+  <!-- PERIOD SUMMARY -->
+  <div class="grid3" id="periodSummary"></div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <div class="card-title" style="margin:0">Lịch sử giao dịch</div>
+      <div style="display:flex;gap:8px;">
+        <select id="filterType" onchange="renderTxTable()" style="background:var(--bg);border:1px solid var(--border);color:var(--text2);padding:5px 9px;border-radius:4px;font-size:12px;">
+          <option value="all">Tất cả</option><option value="income">Chỉ Thu</option><option value="expense">Chỉ Chi</option>
+        </select>
+        <select id="filterPeriod" onchange="renderTxTable()" style="background:var(--bg);border:1px solid var(--border);color:var(--text2);padding:5px 9px;border-radius:4px;font-size:12px;">
+          <option value="all">Tất cả thời gian</option>
+          <option value="week">Tuần hiện tại</option>
+          <option value="month">Tháng TC hiện tại</option>
+          <option value="fy">Năm TC hiện tại</option>
+        </select>
+      </div>
+    </div>
+    <table class="tbl"><thead><tr><th>Ngày</th><th>Loại</th><th>Hạng mục</th><th>Ghi chú</th><th class="tr">Số tiền</th><th></th></tr></thead>
+    <tbody id="txBody"></tbody></table>
+  </div>
+</div>
+
+<!-- ═══════════ TAB 2: ĐẦU TƯ ═══════════ -->
+<div class="section" id="s2">
+
+  <!-- SAVINGS -->
+  <div class="inv-section">
+    <div class="inv-header">
+      <div class="inv-title">💰 Tiết kiệm / Tiền mặt</div>
+      <button class="btn btn-muted" style="font-size:12px" onclick="toggleForm('savForm')">Cập nhật số dư</button>
+    </div>
+    <div class="inline-form" id="savForm">
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end;">
+        <div class="field" style="margin:0"><label>Tên tài khoản / Ngân hàng</label><input type="text" id="savName" placeholder="VD: Techcombank"></div>
+        <div class="field" style="margin:0"><label>Số dư (VNĐ)</label><input type="number" id="savBalance" placeholder="0"></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-green" onclick="addSaving()">Lưu</button>
+          <button class="btn btn-muted" onclick="toggleForm('savForm')">Hủy</button>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden;">
+      <table class="tbl">
+        <thead><tr><th>Tài khoản</th><th class="tr">Số dư</th><th>Cập nhật lần cuối</th><th></th></tr></thead>
+        <tbody id="savBody"></tbody>
+        <tfoot id="savFoot"></tfoot>
+      </table>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <!-- STOCKS -->
+  <div class="inv-section">
+    <div class="inv-header">
+      <div class="inv-title">📈 Chứng khoán</div>
+      <button class="btn btn-muted" style="font-size:12px" onclick="toggleForm('stockForm')">+ Thêm mã</button>
+    </div>
+    <div class="inline-form" id="stockForm">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:12px;align-items:end;">
+        <div class="field" style="margin:0"><label>Mã CK</label><input type="text" id="stTicker" placeholder="VIC" style="text-transform:uppercase"></div>
+        <div class="field" style="margin:0"><label>Số lượng (CP)</label><input type="number" id="stQty" placeholder="0"></div>
+        <div class="field" style="margin:0"><label>Giá vốn (đ/CP)</label><input type="number" id="stCost" placeholder="0"></div>
+        <div class="field" style="margin:0"><label>Giá TT (đ/CP)</label><input type="number" id="stMarket" placeholder="0"></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-green" onclick="addStock()">Thêm</button>
+          <button class="btn btn-muted" onclick="toggleForm('stockForm')">Hủy</button>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden;">
+      <table class="tbl">
+        <thead><tr><th>Mã</th><th class="tr">SL</th><th class="tr">Giá vốn</th><th class="tr">Giá TT</th><th class="tr">GT Danh mục</th><th class="tr">Lãi/Lỗ</th><th class="tr">%</th><th>Cập nhật giá</th><th></th></tr></thead>
+        <tbody id="stockBody"></tbody>
+        <tfoot id="stockFoot"></tfoot>
+      </table>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <!-- GOLD -->
+  <div class="inv-section">
+    <div class="inv-header">
+      <div class="inv-title">🟡 Vàng SJC</div>
+      <button class="btn btn-muted" style="font-size:12px" onclick="toggleForm('goldForm')">+ Thêm vàng</button>
+    </div>
+    <div class="inline-form" id="goldForm">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end;">
+        <div class="field" style="margin:0"><label>Ghi chú / Lô</label><input type="text" id="gdNote" placeholder="Mua T6/2025"></div>
+        <div class="field" style="margin:0"><label>Số lượng (chỉ)</label><input type="number" id="gdQty" placeholder="0" step="0.1"></div>
+        <div class="field" style="margin:0"><label>Giá vốn (tr/chỉ)</label><input type="number" id="gdCost" placeholder="0" step="0.1"></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-amber" onclick="addGold()">Thêm</button>
+          <button class="btn btn-muted" onclick="toggleForm('goldForm')">Hủy</button>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+      <span class="small">Giá SJC (tr/chỉ):</span>
+      <input type="number" id="goldMarketPrice" placeholder="0" step="0.1" style="width:110px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:5px 9px;border-radius:4px;font-size:13px;font-family:var(--mono);">
+      <button class="btn btn-amber" style="font-size:12px" onclick="updateGoldPrice()">Cập nhật</button>
+      <span id="goldPriceLabel" class="small"></span>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden;">
+      <table class="tbl">
+        <thead><tr><th>Lô</th><th class="tr">SL (chỉ)</th><th class="tr">Giá vốn (tr)</th><th class="tr">Giá TT (tr)</th><th class="tr">GT Danh mục</th><th class="tr">Lãi/Lỗ</th><th class="tr">%</th><th></th></tr></thead>
+        <tbody id="goldBody"></tbody>
+        <tfoot id="goldFoot"></tfoot>
+      </table>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <!-- CCQ -->
+  <div class="inv-section">
+    <div class="inv-header">
+      <div class="inv-title">📂 Chứng chỉ quỹ (CCQ)</div>
+      <button class="btn btn-muted" style="font-size:12px" onclick="toggleForm('ccqForm')">+ Thêm CCQ</button>
+    </div>
+    <div class="inline-form" id="ccqForm">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:12px;align-items:end;">
+        <div class="field" style="margin:0"><label>Tên quỹ / Mã</label><input type="text" id="ccqName" placeholder="DCDS, SSIBF..."></div>
+        <div class="field" style="margin:0"><label>Số lượng (CCQ)</label><input type="number" id="ccqQty" placeholder="0"></div>
+        <div class="field" style="margin:0"><label>Giá vốn (đ/CCQ)</label><input type="number" id="ccqCost" placeholder="0"></div>
+        <div class="field" style="margin:0"><label>Giá NAV hiện tại</label><input type="number" id="ccqMarket" placeholder="0"></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-blue" onclick="addCCQ()">Thêm</button>
+          <button class="btn btn-muted" onclick="toggleForm('ccqForm')">Hủy</button>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden;">
+      <table class="tbl">
+        <thead><tr><th>Quỹ</th><th class="tr">SL</th><th class="tr">Giá vốn</th><th class="tr">Giá NAV</th><th class="tr">GT Danh mục</th><th class="tr">Lãi/Lỗ</th><th class="tr">%</th><th>Cập nhật NAV</th><th></th></tr></thead>
+        <tbody id="ccqBody"></tbody>
+        <tfoot id="ccqFoot"></tfoot>
+      </table>
+    </div>
+  </div>
+
+  <!-- INV SUMMARY -->
+  <div class="grid4 mt20">
+    <div class="kpi"><div class="kpi-label">Tiết kiệm</div><div class="kpi-value green mono" id="invSavTotal">—</div></div>
+    <div class="kpi"><div class="kpi-label">Chứng khoán</div><div class="kpi-value blue mono" id="invStockTotal">—</div></div>
+    <div class="kpi"><div class="kpi-label">Vàng SJC</div><div class="kpi-value amber mono" id="invGoldTotal">—</div></div>
+    <div class="kpi"><div class="kpi-label">CCQ</div><div class="kpi-value purple mono" id="invCCQTotal">—</div></div>
+  </div>
+  <div class="grid2">
+    <div class="kpi highlight"><div class="kpi-label">Tổng Tài sản Ròng</div><div class="kpi-value green mono" id="invNetTotal">—</div></div>
+    <div class="kpi"><div class="kpi-label">Tổng Lãi/Lỗ Đầu tư</div><div class="kpi-value mono" id="invPnlTotal">—</div></div>
+  </div>
+</div>
+
+<!-- ═══════════ TAB 3: CHO THUÊ ═══════════ -->
+<div class="section" id="s3">
+  <div class="form-row">
+    <div class="form-block" style="border-top:3px solid var(--accent3)">
+      <div class="form-title" style="color:var(--accent3)">🏠 Thêm Bất động sản</div>
+      <div class="field"><label>Tên / Địa chỉ</label><input type="text" id="propName" placeholder="Căn hộ Quận 7"></div>
+      <div class="field"><label>Giá thuê hàng tháng (VNĐ)</label><input type="number" id="propRent" placeholder="0"></div>
+      <div class="field"><label>Ghi chú</label><input type="text" id="propNote" placeholder="Khách thuê, hợp đồng..."></div>
+      <button class="btn btn-blue" onclick="addProperty()">Thêm BĐS</button>
+    </div>
+    <div class="form-block" style="border-top:3px solid var(--accent)">
+      <div class="form-title green">+ Ghi nhận thu tiền thuê</div>
+      <div class="field"><label>Bất động sản</label><select id="rentPropSel" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 11px;border-radius:5px;font-size:13px;"></select></div>
+      <div class="field"><label>Ngày nhận</label><input type="date" id="rentDate"></div>
+      <div class="field"><label>Số tiền (VNĐ)</label><input type="number" id="rentAmount" placeholder="0"></div>
+      <div class="field"><label>Ghi chú</label><input type="text" id="rentNote" placeholder="Tiền thuê T6/2025"></div>
+      <button class="btn btn-green" onclick="addRentTx()">Ghi nhận</button>
+    </div>
+  </div>
+  <div class="rental-grid">
+    <div>
+      <div class="card-title" style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Danh sách BĐS</div>
+      <div id="propList"></div>
+    </div>
+    <div class="card">
+      <div class="card-title" id="rentalDetailTitle">Chọn BĐS để xem lịch sử</div>
+      <table class="tbl"><thead><tr><th>Ngày</th><th>Ghi chú</th><th class="tr">Số tiền</th><th></th></tr></thead>
+      <tbody id="rentalTxBody"></tbody></table>
+      <div id="rentalTotalRow" style="margin-top:10px;text-align:right;font-family:var(--mono);font-size:13px;color:var(--accent);"></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end main -->
+
+<script>
+// ═══════════════════════════════════════════════════════
+// SUPABASE CONFIG (must be first)
+// ═══════════════════════════════════════════════════════
+const SB_URL = 'https://gvzwleldukpbroiyxcpr.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd2endsZWxkdWtwYnJvaXl4Y3ByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyMzc3NDksImV4cCI6MjA5NjgxMzc0OX0.0u21hno6hanl_XL3hkM4jBzHVcJbth6hOI-DGXr9VZU';
+const SB_HEADERS = { 'Content-Type':'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY };
+
+function setSyncStatus(s) {
+  const el = document.getElementById('syncStatus');
+  if (!el) return;
+  if (s==='saving') el.innerHTML = '<span style="color:var(--accent2)">⏳ Đang lưu...</span>';
+  else if (s==='ok') el.innerHTML = '<span style="color:var(--accent)">✅ Đã lưu ' + new Date().toLocaleTimeString('vi-VN') + '</span>';
+  else if (s==='local') el.innerHTML = '<span style="color:var(--muted)">💾 Local</span>';
+  else el.innerHTML = '<span style="color:var(--danger)">❌ Lỗi sync</span>';
+}
+
+let _saveTimer = null;
+function save() {
+  try { localStorage.setItem('fin2_state', JSON.stringify(state)); } catch(e){}
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(() => {
+    setSyncStatus('saving');
+    fetch(SB_URL + '/rest/v1/finance_state?id=eq.main', {
+      method: 'PATCH',
+      headers: { ...SB_HEADERS, 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ data: state, updated_at: new Date().toISOString() })
+    }).then(r => { if(r.ok) setSyncStatus('ok'); else setSyncStatus('error'); })
+    .catch(() => setSyncStatus('error'));
+  }, 1500);
+}
+
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'finance_backup_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+}
+
+async function importJSON(input) {
+  const file = input.files[0]; if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    state = { ...state, ...data };
+    renderAll();
+    setSyncStatus('saving');
+    fetch(SB_URL + '/rest/v1/finance_state?id=eq.main', {
+      method: 'PATCH',
+      headers: { ...SB_HEADERS, 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ data: state, updated_at: new Date().toISOString() })
+    }).then(r => { if(r.ok){ setSyncStatus('ok'); alert('✅ Import & sync thành công!'); } else setSyncStatus('error'); })
+    .catch(() => setSyncStatus('error'));
+  } catch(e) { alert('File JSON không hợp lệ'); }
+}
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let state = {
+  transactions: [],
+  savings: [],        // {id, name, balance, updatedAt}
+  stocks: [],         // {id, ticker, qty, cost, market}
+  gold: [],           // {id, note, qty, cost, market}
+  ccq: [],            // {id, name, qty, cost, market}
+  goldMarket: 0,
+  properties: [],
+  rentalTxs: [],
+  netWorthHistory: [], // {date, total, ck, gold, ccq, sav}
+  currentWeekOffset: 0
+};
+
+function load() {
+  try {
+    const r = localStorage.getItem('fin2_state');
+    if (r) state = { ...state, ...JSON.parse(r) };
+  } catch(e){}
+}
+
+// ═══════════════════════════════════════════════════════
+// TIME UTILS
+// ═══════════════════════════════════════════════════════
+function getWeekBounds(offset = 0) {
+  const now = new Date();
+  const day = now.getDay();
+  const mon = new Date(now);
+  mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1) + offset * 7);
+  mon.setHours(0,0,0,0);
+  const sun = new Date(mon);
+  sun.setDate(mon.getDate() + 6);
+  sun.setHours(23,59,59,999);
+  return { start: mon, end: sun };
+}
+
+// Financial month: 25th prev → 24th this month
+function getFinMonth(offset = 0) {
+  const now = new Date();
+  let y = now.getFullYear(), m = now.getMonth();
+  // Current fin month starts 25th of prev month
+  // If today < 25, fin month started 25th of (m-1)
+  let startMonth = now.getDate() >= 25 ? m : m - 1;
+  startMonth += offset;
+  // Normalize
+  let startY = y + Math.floor(startMonth / 12);
+  startMonth = ((startMonth % 12) + 12) % 12;
+  const start = new Date(startY, startMonth, 25, 0, 0, 0);
+  const end = new Date(startY, startMonth + 1, 24, 23, 59, 59);
+  return { start, end };
+}
+
+// Financial year: Feb 25 → Feb 24 next year
+function getFinYear() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth(); // 0-indexed
+  // FY starts Feb 25
+  let fyStart;
+  if (m > 1 || (m === 1 && now.getDate() >= 25)) {
+    fyStart = new Date(y, 1, 25);
+  } else {
+    fyStart = new Date(y - 1, 1, 25);
+  }
+  const fyEnd = new Date(fyStart.getFullYear() + 1, 1, 24, 23, 59, 59);
+  return { start: fyStart, end: fyEnd, label: `FY ${fyStart.getFullYear()}–${fyEnd.getFullYear()}` };
+}
+
+function inWeek(dateStr, offset = state.currentWeekOffset) {
+  const { start, end } = getWeekBounds(offset);
+  const d = new Date(dateStr); return d >= start && d <= end;
+}
+function inFinMonth(dateStr, offset = 0) {
+  const { start, end } = getFinMonth(offset);
+  const d = new Date(dateStr); return d >= start && d <= end;
+}
+function inFinYear(dateStr) {
+  const { start, end } = getFinYear();
+  const d = new Date(dateStr); return d >= start && d <= end;
+}
+
+function fmtDate(d) { return d.toISOString().slice(0,10); }
+function fmtDateVN(s) {
+  if (!s) return ''; const [y,m,d] = s.split('-'); return `${d}/${m}/${y}`;
+}
+function changeWeek(dir) { state.currentWeekOffset += dir; updateWeekLabel(); renderAll(); }
+function goCurrentWeek() { state.currentWeekOffset = 0; updateWeekLabel(); renderAll(); }
+function updateWeekLabel() {
+  const { start, end } = getWeekBounds(state.currentWeekOffset);
+  const opts = { day:'2-digit', month:'2-digit' };
+  document.getElementById('weekLabel').textContent =
+    `${start.toLocaleDateString('vi-VN',opts)} – ${end.toLocaleDateString('vi-VN',opts)} ${end.getFullYear()}`;
+  const fy = getFinYear();
+  document.getElementById('fyBadge').textContent = fy.label;
+}
+
+// ═══════════════════════════════════════════════════════
+// FORMAT
+// ═══════════════════════════════════════════════════════
+function fmt(n, dec=0) {
+  if (n===undefined||n===null||isNaN(n)) return '—';
+  return new Intl.NumberFormat('vi-VN',{maximumFractionDigits:dec}).format(n);
+}
+function fmtB(n) {
+  if (!n && n!==0) return '—';
+  const abs = Math.abs(n);
+  if (abs >= 1e9) return (n/1e9).toFixed(2)+' tỷ';
+  if (abs >= 1e6) return (n/1e6).toFixed(1)+' tr';
+  return fmt(n)+' đ';
+}
+
+let _id = Date.now();
+function uid() { return ++_id; }
+
+// ═══════════════════════════════════════════════════════
+// NET WORTH
+// ═══════════════════════════════════════════════════════
+function calcNetWorth() {
+  const sav   = state.savings.reduce((s,x) => s + x.balance, 0);
+  const ck    = state.stocks.reduce((s,x) => s + x.qty * x.market, 0);
+  const gold  = state.gold.reduce((s,x) => s + x.qty * (state.goldMarket||x.market) * 1e6, 0);
+  const ccqV  = state.ccq.reduce((s,x) => s + x.qty * x.market, 0);
+  return { sav, ck, gold, ccq: ccqV, total: sav+ck+gold+ccqV };
+}
+
+function takeSnapshot() {
+  const nw = calcNetWorth();
+  const today = fmtDate(new Date());
+  // Replace existing same-day snapshot
+  state.netWorthHistory = state.netWorthHistory.filter(h => h.date !== today);
+  state.netWorthHistory.push({ date: today, ...nw });
+  state.netWorthHistory.sort((a,b) => a.date.localeCompare(b.date));
+  save();
+  renderAll();
+  alert(`✅ Snapshot lưu: ${fmtB(nw.total)}`);
+}
+
+function renderNetWorthBar() {
+  const nw = calcNetWorth();
+  document.getElementById('nwTotal').textContent = fmtB(nw.total);
+  const last = state.netWorthHistory.slice(-1)[0];
+  document.getElementById('nwUpdated').textContent = last ? `Snapshot cuối: ${fmtDateVN(last.date)}` : 'Chưa có snapshot';
+  const segs = [
+    { label:'Tiết kiệm', val:nw.sav, color:'var(--accent)' },
+    { label:'CK', val:nw.ck, color:'var(--accent3)' },
+    { label:'Vàng', val:nw.gold, color:'var(--accent2)' },
+    { label:'CCQ', val:nw.ccq, color:'var(--accent4)' },
+  ];
+  document.getElementById('nwSegs').innerHTML = segs.map(s=>`
+    <div class="nw-seg">
+      <div class="nw-dot" style="background:${s.color}"></div>
+      <div><div style="font-size:10px;color:var(--muted)">${s.label}</div><div style="font-family:var(--mono);font-size:13px;color:${s.color}">${fmtB(s.val)}</div></div>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// TRANSACTIONS
+// ═══════════════════════════════════════════════════════
+function addTx(type) {
+  const dId = type==='income'?'incDate':'expDate';
+  const cId = type==='income'?'incCat':'expCat';
+  const aId = type==='income'?'incAmount':'expAmount';
+  const nId = type==='income'?'incNote':'expNote';
+  const date = document.getElementById(dId).value;
+  const amount = parseFloat(document.getElementById(aId).value);
+  if (!date||!amount||amount<=0){alert('Nhập ngày và số tiền hợp lệ.');return;}
+  state.transactions.push({
+    id:uid(), date, type,
+    cat: document.getElementById(cId).value,
+    amount, note: document.getElementById(nId).value
+  });
+  document.getElementById(aId).value='';
+  document.getElementById(nId).value='';
+  save(); renderAll();
+}
+function deleteTx(id) { state.transactions=state.transactions.filter(t=>t.id!==id); save(); renderAll(); }
+
+function renderTxTable() {
+  const ft = document.getElementById('filterType').value;
+  const fp = document.getElementById('filterPeriod').value;
+  let rows = state.transactions.filter(t => ft==='all'||t.type===ft);
+  if (fp==='week') rows = rows.filter(t => inWeek(t.date));
+  else if (fp==='month') rows = rows.filter(t => inFinMonth(t.date));
+  else if (fp==='fy') rows = rows.filter(t => inFinYear(t.date));
+  rows.sort((a,b)=>b.date.localeCompare(a.date));
+  const body = document.getElementById('txBody');
+  if (!rows.length){body.innerHTML=`<tr><td colspan="6" class="empty">Chưa có giao dịch</td></tr>`;return;}
+  body.innerHTML = rows.map(t=>`<tr>
+    <td class="mono">${fmtDateVN(t.date)}</td>
+    <td><span class="tag tag-${t.type}">${t.type==='income'?'Thu':'Chi'}</span></td>
+    <td><span class="tag-cat">${t.cat}</span></td>
+    <td style="color:var(--text2)">${t.note||'—'}</td>
+    <td class="tr mono ${t.type==='income'?'pos':'neg'}">${t.type==='income'?'+':'−'}${fmt(t.amount)}</td>
+    <td><button class="del-btn" onclick="deleteTx(${t.id})">✕</button></td>
+  </tr>`).join('');
+}
+
+function renderPeriodSummary() {
+  const weekTx = state.transactions.filter(t=>inWeek(t.date));
+  const monTx  = state.transactions.filter(t=>inFinMonth(t.date));
+  const fyTx   = state.transactions.filter(t=>inFinYear(t.date));
+  const sum = arr => ({
+    inc: arr.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0),
+    exp: arr.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0)
+  });
+  const { start: ms, end: me } = getFinMonth();
+  const { start: fys, end: fye } = getFinYear();
+  const blocks = [
+    { label:`Tuần (${getWeekBounds(state.currentWeekOffset).start.toLocaleDateString('vi-VN',{day:'2-digit',month:'2-digit'})}–${getWeekBounds(state.currentWeekOffset).end.toLocaleDateString('vi-VN',{day:'2-digit',month:'2-digit'})})`, ...sum(weekTx) },
+    { label:`Tháng TC (25/${ms.getMonth()+1}–24/${me.getMonth()+1})`, ...sum(monTx) },
+    { label:`Năm TC (${fys.getFullYear()})`, ...sum(fyTx) }
+  ];
+  document.getElementById('periodSummary').innerHTML = blocks.map(b=>{
+    const net=b.inc-b.exp;
+    return `<div class="kpi">
+      <div class="kpi-label">${b.label}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:4px;">
+        <div class="small">Thu: <span class="mono green">${fmtB(b.inc)}</span></div>
+        <div class="small">Chi: <span class="mono red">${fmtB(b.exp)}</span></div>
+      </div>
+      <div class="mono" style="font-size:15px;margin-top:6px;color:${net>=0?'var(--accent)':'var(--danger)'};">${net>=0?'+':''}${fmtB(net)}</div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// SAVINGS
+// ═══════════════════════════════════════════════════════
+function addSaving() {
+  const name = document.getElementById('savName').value.trim();
+  const bal  = parseFloat(document.getElementById('savBalance').value);
+  if (!name||isNaN(bal)){alert('Nhập tên và số dư.');return;}
+  const existing = state.savings.find(s=>s.name.toLowerCase()===name.toLowerCase());
+  if (existing) { existing.balance=bal; existing.updatedAt=fmtDate(new Date()); }
+  else state.savings.push({id:uid(),name,balance:bal,updatedAt:fmtDate(new Date())});
+  document.getElementById('savName').value='';
+  document.getElementById('savBalance').value='';
+  toggleForm('savForm');
+  save(); renderAll();
+}
+function deleteSaving(id) { state.savings=state.savings.filter(s=>s.id!==id); save(); renderAll(); }
+function renderSavings() {
+  const body=document.getElementById('savBody'), foot=document.getElementById('savFoot');
+  if (!state.savings.length){
+    body.innerHTML=`<tr><td colspan="4" class="empty">Chưa có tài khoản. Nhấn "Cập nhật số dư".</td></tr>`;
+    foot.innerHTML=''; document.getElementById('invSavTotal').textContent='0 đ'; return;
+  }
+  body.innerHTML=state.savings.map(s=>`<tr>
+    <td><strong>${s.name}</strong></td>
+    <td class="tr mono pos">${fmt(s.balance)} đ</td>
+    <td class="small">${fmtDateVN(s.updatedAt)||'—'}</td>
+    <td><button class="del-btn" onclick="deleteSaving(${s.id})">✕</button></td>
+  </tr>`).join('');
+  const total=state.savings.reduce((s,x)=>s+x.balance,0);
+  foot.innerHTML=`<tr><td style="font-weight:600;color:var(--muted);font-size:12px;">TỔNG</td><td class="tr mono pos">${fmt(total)} đ</td><td colspan="2"></td></tr>`;
+  document.getElementById('invSavTotal').textContent=fmtB(total);
+}
+
+// ═══════════════════════════════════════════════════════
+// STOCKS
+// ═══════════════════════════════════════════════════════
+function addStock() {
+  const ticker=document.getElementById('stTicker').value.trim().toUpperCase();
+  const qty=parseFloat(document.getElementById('stQty').value);
+  const cost=parseFloat(document.getElementById('stCost').value);
+  const market=parseFloat(document.getElementById('stMarket').value)||cost;
+  if (!ticker||!qty||!cost){alert('Nhập đủ mã, số lượng, giá vốn.');return;}
+  state.stocks.push({id:uid(),ticker,qty,cost,market});
+  ['stTicker','stQty','stCost','stMarket'].forEach(i=>document.getElementById(i).value='');
+  toggleForm('stockForm'); save(); renderAll();
+}
+function deleteStock(id) { state.stocks=state.stocks.filter(s=>s.id!==id); save(); renderAll(); }
+function updateStockPrice(id,val) {
+  const s=state.stocks.find(x=>x.id===id);
+  if(s){s.market=parseFloat(val)||s.market; save(); renderAll();}
+}
+function renderStocks() {
+  const body=document.getElementById('stockBody'), foot=document.getElementById('stockFoot');
+  if (!state.stocks.length){
+    body.innerHTML=`<tr><td colspan="9" class="empty">Chưa có mã nào.</td></tr>`;
+    foot.innerHTML=''; document.getElementById('invStockTotal').textContent='—'; return;
+  }
+  let tv=0,tc=0,tp=0;
+  body.innerHTML=state.stocks.map(s=>{
+    const v=s.qty*s.market, c=s.qty*s.cost, pnl=v-c, pct=c?pnl/c*100:0;
+    tv+=v;tc+=c;tp+=pnl;
+    return `<tr>
+      <td><strong>${s.ticker}</strong></td>
+      <td class="tr mono">${fmt(s.qty)}</td>
+      <td class="tr mono">${fmt(s.cost)}</td>
+      <td class="tr mono">${fmt(s.market)}</td>
+      <td class="tr mono neu">${fmtB(v)}</td>
+      <td class="tr mono ${pnl>=0?'pos':'neg'}">${pnl>=0?'+':''}${fmtB(pnl)}</td>
+      <td class="tr mono ${pct>=0?'pos':'neg'}">${pct>=0?'+':''}${pct.toFixed(2)}%</td>
+      <td><input type="number" value="${s.market}" onchange="updateStockPrice(${s.id},this.value)"
+        style="width:95px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:4px 7px;border-radius:4px;font-size:12px;font-family:var(--mono);"></td>
+      <td><button class="del-btn" onclick="deleteStock(${s.id})">✕</button></td>
+    </tr>`;
+  }).join('');
+  const pp=tc?tp/tc*100:0;
+  foot.innerHTML=`<tr><td colspan="4" style="font-weight:600;color:var(--muted);font-size:12px;">TỔNG</td>
+    <td class="tr mono neu">${fmtB(tv)}</td>
+    <td class="tr mono ${tp>=0?'pos':'neg'}">${tp>=0?'+':''}${fmtB(tp)}</td>
+    <td class="tr mono ${pp>=0?'pos':'neg'}">${pp>=0?'+':''}${pp.toFixed(2)}%</td>
+    <td colspan="2"></td></tr>`;
+  document.getElementById('invStockTotal').textContent=fmtB(tv);
+}
+
+// ═══════════════════════════════════════════════════════
+// GOLD
+// ═══════════════════════════════════════════════════════
+function addGold() {
+  const note=document.getElementById('gdNote').value||'Vàng SJC';
+  const qty=parseFloat(document.getElementById('gdQty').value);
+  const cost=parseFloat(document.getElementById('gdCost').value);
+  if (!qty||!cost){alert('Nhập số lượng và giá vốn.');return;}
+  state.gold.push({id:uid(),note,qty,cost,market:state.goldMarket||cost});
+  ['gdNote','gdQty','gdCost'].forEach(i=>document.getElementById(i).value='');
+  toggleForm('goldForm'); save(); renderAll();
+}
+function deleteGold(id) { state.gold=state.gold.filter(g=>g.id!==id); save(); renderAll(); }
+function updateGoldPrice() {
+  const v=parseFloat(document.getElementById('goldMarketPrice').value);
+  if (!v||v<=0){alert('Nhập giá hợp lệ.');return;}
+  state.goldMarket=v;
+  state.gold.forEach(g=>g.market=v);
+  document.getElementById('goldPriceLabel').textContent=`Cập nhật ${new Date().toLocaleTimeString('vi-VN')}`;
+  save(); renderAll();
+}
+function renderGold() {
+  const body=document.getElementById('goldBody'), foot=document.getElementById('goldFoot');
+  const mkt=state.goldMarket;
+  if (mkt) document.getElementById('goldMarketPrice').value=mkt;
+  if (!state.gold.length){
+    body.innerHTML=`<tr><td colspan="8" class="empty">Chưa có vàng.</td></tr>`;
+    foot.innerHTML=''; document.getElementById('invGoldTotal').textContent='—'; return;
+  }
+  let tv=0,tc=0,tp=0;
+  body.innerHTML=state.gold.map(g=>{
+    const cm=mkt||g.market;
+    const v=g.qty*cm*1e6, c=g.qty*g.cost*1e6, pnl=v-c, pct=c?pnl/c*100:0;
+    tv+=v;tc+=c;tp+=pnl;
+    return `<tr>
+      <td>${g.note}</td>
+      <td class="tr mono">${g.qty}</td>
+      <td class="tr mono">${g.cost} tr</td>
+      <td class="tr mono amber">${cm} tr</td>
+      <td class="tr mono neu">${fmtB(v)}</td>
+      <td class="tr mono ${pnl>=0?'pos':'neg'}">${pnl>=0?'+':''}${fmtB(pnl)}</td>
+      <td class="tr mono ${pct>=0?'pos':'neg'}">${pct>=0?'+':''}${pct.toFixed(2)}%</td>
+      <td><button class="del-btn" onclick="deleteGold(${g.id})">✕</button></td>
+    </tr>`;
+  }).join('');
+  const pp=tc?tp/tc*100:0;
+  foot.innerHTML=`<tr><td colspan="4" style="font-weight:600;color:var(--muted);font-size:12px;">TỔNG</td>
+    <td class="tr mono neu">${fmtB(tv)}</td>
+    <td class="tr mono ${tp>=0?'pos':'neg'}">${tp>=0?'+':''}${fmtB(tp)}</td>
+    <td class="tr mono ${pp>=0?'pos':'neg'}">${pp>=0?'+':''}${pp.toFixed(2)}%</td>
+    <td></td></tr>`;
+  document.getElementById('invGoldTotal').textContent=fmtB(tv);
+}
+
+// ═══════════════════════════════════════════════════════
+// CCQ
+// ═══════════════════════════════════════════════════════
+function addCCQ() {
+  const name=document.getElementById('ccqName').value.trim();
+  const qty=parseFloat(document.getElementById('ccqQty').value);
+  const cost=parseFloat(document.getElementById('ccqCost').value);
+  const market=parseFloat(document.getElementById('ccqMarket').value)||cost;
+  if (!name||!qty||!cost){alert('Nhập đủ tên quỹ, số lượng, giá vốn.');return;}
+  state.ccq.push({id:uid(),name,qty,cost,market});
+  ['ccqName','ccqQty','ccqCost','ccqMarket'].forEach(i=>document.getElementById(i).value='');
+  toggleForm('ccqForm'); save(); renderAll();
+}
+function deleteCCQ(id) { state.ccq=state.ccq.filter(c=>c.id!==id); save(); renderAll(); }
+function updateCCQPrice(id,val) {
+  const c=state.ccq.find(x=>x.id===id);
+  if(c){c.market=parseFloat(val)||c.market; save(); renderAll();}
+}
+function renderCCQ() {
+  const body=document.getElementById('ccqBody'), foot=document.getElementById('ccqFoot');
+  if (!state.ccq.length){
+    body.innerHTML=`<tr><td colspan="9" class="empty">Chưa có CCQ nào.</td></tr>`;
+    foot.innerHTML=''; document.getElementById('invCCQTotal').textContent='—'; return;
+  }
+  let tv=0,tc=0,tp=0;
+  body.innerHTML=state.ccq.map(c=>{
+    const v=c.qty*c.market, cs=c.qty*c.cost, pnl=v-cs, pct=cs?pnl/cs*100:0;
+    tv+=v;tc+=cs;tp+=pnl;
+    return `<tr>
+      <td><strong>${c.name}</strong></td>
+      <td class="tr mono">${fmt(c.qty)}</td>
+      <td class="tr mono">${fmt(c.cost)}</td>
+      <td class="tr mono">${fmt(c.market)}</td>
+      <td class="tr mono purple">${fmtB(v)}</td>
+      <td class="tr mono ${pnl>=0?'pos':'neg'}">${pnl>=0?'+':''}${fmtB(pnl)}</td>
+      <td class="tr mono ${pct>=0?'pos':'neg'}">${pct>=0?'+':''}${pct.toFixed(2)}%</td>
+      <td><input type="number" value="${c.market}" onchange="updateCCQPrice(${c.id},this.value)"
+        style="width:95px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:4px 7px;border-radius:4px;font-size:12px;font-family:var(--mono);"></td>
+      <td><button class="del-btn" onclick="deleteCCQ(${c.id})">✕</button></td>
+    </tr>`;
+  }).join('');
+  const pp=tc?tp/tc*100:0;
+  foot.innerHTML=`<tr><td colspan="4" style="font-weight:600;color:var(--muted);font-size:12px;">TỔNG</td>
+    <td class="tr mono purple">${fmtB(tv)}</td>
+    <td class="tr mono ${tp>=0?'pos':'neg'}">${tp>=0?'+':''}${fmtB(tp)}</td>
+    <td class="tr mono ${pp>=0?'pos':'neg'}">${pp>=0?'+':''}${pp.toFixed(2)}%</td>
+    <td colspan="2"></td></tr>`;
+  document.getElementById('invCCQTotal').textContent=fmtB(tv);
+}
+
+function renderInvSummary() {
+  const nw=calcNetWorth();
+  const stockPnl=state.stocks.reduce((s,x)=>s+x.qty*(x.market-x.cost),0);
+  const goldPnl=state.gold.reduce((s,x)=>s+x.qty*((state.goldMarket||x.market)-x.cost)*1e6,0);
+  const ccqPnl=state.ccq.reduce((s,x)=>s+x.qty*(x.market-x.cost),0);
+  const totalPnl=stockPnl+goldPnl+ccqPnl;
+  document.getElementById('invNetTotal').textContent=fmtB(nw.total);
+  document.getElementById('invPnlTotal').textContent=(totalPnl>=0?'+':'')+fmtB(totalPnl);
+  document.getElementById('invPnlTotal').className='kpi-value mono '+(totalPnl>=0?'pos':'neg');
+}
+
+// ═══════════════════════════════════════════════════════
+// RENTAL
+// ═══════════════════════════════════════════════════════
+let selectedPropId=null;
+function addProperty() {
+  const name=document.getElementById('propName').value.trim();
+  const rent=parseFloat(document.getElementById('propRent').value)||0;
+  const note=document.getElementById('propNote').value;
+  if (!name){alert('Nhập tên BĐS.');return;}
+  state.properties.push({id:uid(),name,rent,note});
+  ['propName','propRent','propNote'].forEach(i=>document.getElementById(i).value='');
+  save(); renderRental();
+}
+function deleteProperty(id) {
+  state.properties=state.properties.filter(p=>p.id!==id);
+  state.rentalTxs=state.rentalTxs.filter(t=>t.propId!==id);
+  if (selectedPropId===id) selectedPropId=null;
+  save(); renderRental();
+}
+function addRentTx() {
+  const propId=parseInt(document.getElementById('rentPropSel').value);
+  const date=document.getElementById('rentDate').value;
+  const amount=parseFloat(document.getElementById('rentAmount').value);
+  const note=document.getElementById('rentNote').value;
+  if (!propId||!date||!amount){alert('Chọn BĐS, nhập ngày và số tiền.');return;}
+  state.rentalTxs.push({id:uid(),propId,date,amount,note});
+  document.getElementById('rentAmount').value='';
+  document.getElementById('rentNote').value='';
+  save(); renderRental();
+}
+function deleteRentTx(id) { state.rentalTxs=state.rentalTxs.filter(t=>t.id!==id); save(); renderRental(); }
+function selectProp(id) { selectedPropId=id; renderRental(); }
+function renderRental() {
+  const pl=document.getElementById('propList');
+  const sel=document.getElementById('rentPropSel');
+  if (!state.properties.length){
+    pl.innerHTML=`<div class="empty">Chưa có BĐS.</div>`;
+    sel.innerHTML=''; return;
+  }
+  pl.innerHTML=state.properties.map(p=>{
+    const total=state.rentalTxs.filter(t=>t.propId===p.id).reduce((s,t)=>s+t.amount,0);
+    return `<div class="rental-prop ${selectedPropId===p.id?'selected':''}" onclick="selectProp(${p.id})">
+      <div style="display:flex;justify-content:space-between;">
+        <div style="font-weight:600;font-size:13px;">${p.name}</div>
+        <button class="del-btn" onclick="event.stopPropagation();deleteProperty(${p.id})">✕</button>
+      </div>
+      <div class="small">${p.note||''} ${p.rent?'· '+fmtB(p.rent)+'/th':''}</div>
+      <div style="font-family:var(--mono);font-size:13px;color:var(--accent);margin-top:5px;">${fmtB(total)}</div>
+    </div>`;
+  }).join('');
+  sel.innerHTML=state.properties.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+  const body=document.getElementById('rentalTxBody');
+  const titleEl=document.getElementById('rentalDetailTitle');
+  const totalRow=document.getElementById('rentalTotalRow');
+  if (!selectedPropId){
+    titleEl.textContent='Chọn BĐS để xem lịch sử';
+    body.innerHTML=`<tr><td colspan="4" class="empty">—</td></tr>`;
+    totalRow.textContent=''; return;
+  }
+  const prop=state.properties.find(p=>p.id===selectedPropId);
+  titleEl.textContent=prop?prop.name:'';
+  const txs=state.rentalTxs.filter(t=>t.propId===selectedPropId).sort((a,b)=>b.date.localeCompare(a.date));
+  if (!txs.length){body.innerHTML=`<tr><td colspan="4" class="empty">Chưa có giao dịch.</td></tr>`;totalRow.textContent='';return;}
+  body.innerHTML=txs.map(t=>`<tr>
+    <td class="mono">${fmtDateVN(t.date)}</td>
+    <td style="color:var(--text2)">${t.note||'—'}</td>
+    <td class="tr mono pos">+${fmt(t.amount)}</td>
+    <td><button class="del-btn" onclick="deleteRentTx(${t.id})">✕</button></td>
+  </tr>`).join('');
+  const total=txs.reduce((s,t)=>s+t.amount,0);
+  totalRow.innerHTML=`Tổng: <strong class="pos">${fmt(total)} đ</strong>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// FY UTILS
+// ═══════════════════════════════════════════════════════
+let selectedFY = new Date().getFullYear();
+// FY starts Feb 25 of selectedFY, ends Feb 24 of selectedFY+1
+function getFYBounds(fy) {
+  return {
+    start: new Date(fy, 1, 25, 0, 0, 0),
+    end:   new Date(fy+1, 1, 24, 23, 59, 59)
+  };
+}
+// Get 12 fin months for a FY: [{start,end,label}]
+function getFY12Months(fy) {
+  const months = [];
+  for (let i = 0; i < 12; i++) {
+    let sm = 1 + i; // Feb=1 (0-indexed month)
+    let sy = fy;
+    // months: Feb25->Mar24, Mar25->Apr24 ... Jan25->Feb24
+    // index 0 = Feb25->Mar24
+    const startM = (1 + i) % 12; // 0-indexed: Feb=1,Mar=2...Jan=0
+    const startY = i < 10 ? fy : fy + 1; // Jan,Feb of next year
+    const endM   = (2 + i) % 12;
+    const endY   = endM === 0 ? startY + 1 : (endM <= startM && i > 0 ? startY + 1 : startY);
+    const start  = new Date(startY, startM, 25, 0, 0, 0);
+    const end    = new Date(endM === 0 ? startY+1 : (start.getMonth()+1 > 11 ? startY+1 : startY), endM === 0 ? 0 : endM, 24, 23, 59, 59);
+    // Simpler: just add month offset from Feb 25
+    const s2 = new Date(fy, 1 + i, 25, 0, 0, 0);
+    const e2 = new Date(fy, 2 + i, 24, 23, 59, 59);
+    const MONTH_NAMES = ['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'];
+    const actualMonth = (1 + i) % 12; // 0=Jan,1=Feb...
+    months.push({
+      start: s2, end: e2,
+      label: `T${s2.getMonth()+1}/${s2.getFullYear().toString().slice(2)}`
+    });
+  }
+  return months;
+}
+function inFYMonth(dateStr, monthObj) {
+  const d = new Date(dateStr);
+  return d >= monthObj.start && d <= monthObj.end;
+}
+function selectFY(fy) {
+  selectedFY = fy;
+  document.getElementById('fyBtn2026').className = fy===2026 ? 'btn btn-green' : 'btn btn-muted';
+  document.getElementById('fyBtn2027').className = fy===2027 ? 'btn btn-green' : 'btn btn-muted';
+  const {start,end} = getFYBounds(fy);
+  document.getElementById('fyRangeLabel').textContent =
+    `25/02/${start.getFullYear()} – 24/02/${end.getFullYear()}`;
+  renderOverview();
+}
+let selectedMonthIdx = null;
+
+// ═══════════════════════════════════════════════════════
+// OVERVIEW KPI
+// ═══════════════════════════════════════════════════════
+function calcWeekTotals(offset=state.currentWeekOffset) {
+  const week=state.transactions.filter(t=>inWeek(t.date,offset));
+  const income=week.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const expense=week.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  return {income,expense,net:income-expense};
+}
+
+function renderOverview() {
+  const months = getFY12Months(selectedFY);
+  const now = new Date();
+  const {start:fyStart, end:fyEnd} = getFYBounds(selectedFY);
+
+  // Calc each month
+  const mData = months.map(m => {
+    const txs = state.transactions.filter(t => inFYMonth(t.date, m));
+    const inc = txs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+    const exp = txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+    const isFuture = m.start > now;
+    const isCurrent = now >= m.start && now <= m.end;
+    return {inc, exp, net:inc-exp, isFuture, isCurrent, label:m.label, m};
+  });
+
+  // Current month idx
+  const curIdx = mData.findIndex(d=>d.isCurrent);
+  if (selectedMonthIdx === null && curIdx >= 0) selectedMonthIdx = curIdx;
+
+  // YTD = months up to and including current
+  const ytdMonths = mData.filter(d => !d.isFuture || d.isCurrent);
+  const ytdDu = ytdMonths.reduce((s,d)=>s+d.net, 0);
+  const ytdInc = ytdMonths.reduce((s,d)=>s+d.inc, 0);
+  const ytdExp = ytdMonths.reduce((s,d)=>s+d.exp, 0);
+
+  // Current month net
+  const curNet = curIdx>=0 ? mData[curIdx].net : 0;
+  const nw = calcNetWorth();
+
+  // LEVEL 1
+  document.getElementById('l1Row').innerHTML = `
+    <div class="kpi highlight" style="border-left:3px solid var(--accent);">
+      <div class="kpi-label">Dư tháng này</div>
+      <div class="kpi-value ${curNet>=0?'green':'red'} mono" style="font-size:24px;">${curNet>=0?'+':''}${fmtB(curNet)}</div>
+      <div class="small">${curIdx>=0?mData[curIdx].label:'—'}</div>
+    </div>
+    <div class="kpi" style="border-left:3px solid var(--accent3);">
+      <div class="kpi-label">Lũy kế YTD (${ytdMonths.length} tháng)</div>
+      <div class="kpi-value ${ytdDu>=0?'green':'red'} mono" style="font-size:24px;">${ytdDu>=0?'+':''}${fmtB(ytdDu)}</div>
+      <div class="small">Thu ${fmtB(ytdInc)} / Chi ${fmtB(ytdExp)}</div>
+    </div>
+    <div class="kpi highlight" style="border-left:3px solid var(--accent2);">
+      <div class="kpi-label">Tổng Tài sản Ròng</div>
+      <div class="kpi-value amber mono" style="font-size:24px;">${fmtB(nw.total)}</div>
+      <div class="small">CK+Vàng+CCQ+TK</div>
+    </div>
+  `;
+
+  // LEVEL 2: 12-month table
+  document.getElementById('monthTableTitle').textContent = `FY ${selectedFY}–${selectedFY+1} · 12 tháng TC`;
+  const head = document.getElementById('monthTableHead');
+  const body = document.getElementById('monthTableBody');
+
+  head.innerHTML = `<tr><th>Tháng</th>${mData.map((d,i)=>`<th class="tc" style="cursor:pointer;${i===selectedMonthIdx?'color:var(--accent);':''}" onclick="selectMonth(${i})">${d.label}</th>`).join('')}</tr>`;
+
+  // Thu row
+  const thuRow = `<tr>
+    <td style="color:var(--text2);font-size:12px;font-weight:600;">Thu</td>
+    ${mData.map((d,i)=>{
+      const prev = i>0?mData[i-1]:null;
+      const pct = prev&&prev.inc>0?((d.inc-prev.inc)/prev.inc*100):null;
+      const isSel = i===selectedMonthIdx;
+      if(d.isFuture) return `<td class="tc mono" style="color:var(--muted);background:${isSel?'rgba(74,222,128,.06)':''};">—</td>`;
+      return `<td class="tc" style="background:${isSel?'rgba(74,222,128,.06)':''};" onclick="selectMonth(${i})" style="cursor:pointer;">
+        <div class="mono pos" style="font-size:13px;">${d.inc>0?fmtB(d.inc):'—'}</div>
+        ${pct!==null&&d.inc>0?`<div style="font-size:10px;color:${pct>=0?'var(--accent)':'var(--danger)'};">${pct>=0?'+':''}${pct.toFixed(0)}%</div>`:''}
+      </td>`;
+    }).join('')}
+  </tr>`;
+
+  // Chi row
+  const chiRow = `<tr>
+    <td style="color:var(--text2);font-size:12px;font-weight:600;">Chi</td>
+    ${mData.map((d,i)=>{
+      const prev = i>0?mData[i-1]:null;
+      const pct = prev&&prev.exp>0?((d.exp-prev.exp)/prev.exp*100):null;
+      const isSel = i===selectedMonthIdx;
+      if(d.isFuture) return `<td class="tc mono" style="color:var(--muted);background:${isSel?'rgba(74,222,128,.06)':''};">—</td>`;
+      return `<td class="tc" style="background:${isSel?'rgba(74,222,128,.06)':''};" onclick="selectMonth(${i})" style="cursor:pointer;">
+        <div class="mono neg" style="font-size:13px;">${d.exp>0?fmtB(d.exp):'—'}</div>
+        ${pct!==null&&d.exp>0?`<div style="font-size:10px;color:${pct<=0?'var(--accent)':'var(--danger)'};">${pct>=0?'+':''}${pct.toFixed(0)}%</div>`:''}
+      </td>`;
+    }).join('')}
+  </tr>`;
+
+  // Dư row
+  const duRow = `<tr style="border-top:1px solid var(--border);">
+    <td style="color:var(--text2);font-size:12px;font-weight:600;">Dư</td>
+    ${mData.map((d,i)=>{
+      const isSel = i===selectedMonthIdx;
+      const isCur = d.isCurrent;
+      if(d.isFuture) return `<td class="tc mono" style="color:var(--muted);background:${isSel?'rgba(74,222,128,.06)':''};">—</td>`;
+      return `<td class="tc mono ${d.net>=0?'pos':'neg'}" style="font-size:13px;font-weight:600;background:${isSel?'rgba(74,222,128,.06)':''};${isCur?'text-decoration:underline;':''}" onclick="selectMonth(${i})">${d.net>=0?'+':''}${fmtB(d.net)}</td>`;
+    }).join('')}
+  </tr>`;
+
+  body.innerHTML = thuRow + chiRow + duRow;
+
+  // LEVEL 3: selected month detail
+  renderMonthDetail(mData, selectedMonthIdx);
+}
+
+function selectMonth(idx) {
+  selectedMonthIdx = idx;
+  renderOverview();
+}
+
+function renderMonthDetail(mData, idx) {
+  const l3 = document.getElementById('l3Detail');
+  if (idx === null || idx === undefined) { l3.style.display='none'; return; }
+  const d = mData[idx];
+  l3.style.display = 'block';
+
+  // Left: Thu vs Chi breakdown
+  const txs = state.transactions.filter(t => inFYMonth(t.date, d.m));
+  const expTxs = txs.filter(t=>t.type==='expense');
+  const catMap = {};
+  expTxs.forEach(t=>{ catMap[t.cat]=(catMap[t.cat]||0)+t.amount; });
+  const cats = Object.entries(catMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+  document.getElementById('l3Left').innerHTML = `
+    <div class="card-title">${d.label} · Chi tiêu</div>
+    ${cats.length ? cats.map(([cat,amt])=>{
+      const pct = d.exp>0?(amt/d.exp*100):0;
+      return `<div style="margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
+          <span class="tag-cat">${cat}</span>
+          <span class="mono neg" style="font-size:12px;">${fmtB(amt)}</span>
+        </div>
+        <div style="height:4px;background:var(--border);border-radius:2px;">
+          <div style="height:4px;width:${pct.toFixed(0)}%;background:var(--danger);border-radius:2px;opacity:.7;"></div>
+        </div>
+      </div>`;
+    }).join('') : '<div class="empty">Chưa có chi tiêu</div>'}
+  `;
+
+  // Right: summary
+  const incSrc = {};
+  txs.filter(t=>t.type==='income').forEach(t=>{ incSrc[t.cat]=(incSrc[t.cat]||0)+t.amount; });
+  const incEntries = Object.entries(incSrc).sort((a,b)=>b[1]-a[1]);
+  document.getElementById('l3Right').innerHTML = `
+    <div class="card-title">${d.label} · Tổng kết</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+      <div class="kpi" style="padding:10px 12px;">
+        <div class="kpi-label">Thu</div>
+        <div class="kpi-value green mono" style="font-size:16px;">+${fmtB(d.inc)}</div>
+      </div>
+      <div class="kpi" style="padding:10px 12px;">
+        <div class="kpi-label">Chi</div>
+        <div class="kpi-value red mono" style="font-size:16px;">−${fmtB(d.exp)}</div>
+      </div>
+    </div>
+    <div style="background:var(--bg);border-radius:6px;padding:10px 12px;margin-bottom:10px;">
+      <div class="kpi-label">Dư tháng</div>
+      <div class="kpi-value ${d.net>=0?'green':'red'} mono" style="font-size:20px;">${d.net>=0?'+':''}${fmtB(d.net)}</div>
+    </div>
+    ${incEntries.length?`<div class="card-title" style="margin-top:8px;">Nguồn thu</div>`:''}
+    ${incEntries.map(([cat,amt])=>`
+      <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);">
+        <span class="tag-cat">${cat}</span>
+        <span class="mono pos" style="font-size:12px;">+${fmtB(amt)}</span>
+      </div>`).join('')}
+  `;
+}
+
+function renderKPI() { renderOverview(); }
+
+function renderRecent() {
+  const rows=[...state.transactions].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8);
+  const body=document.getElementById('recentBody');
+  if (!rows.length){body.innerHTML=`<tr><td colspan="5" class="empty">—</td></tr>`;return;}
+  body.innerHTML=rows.map(t=>`<tr>
+    <td class="mono">${fmtDateVN(t.date)}</td>
+    <td><span class="tag tag-${t.type}">${t.type==='income'?'Thu':'Chi'}</span></td>
+    <td><span class="tag-cat">${t.cat}</span></td>
+    <td style="color:var(--text2)">${t.note||'—'}</td>
+    <td class="tr mono ${t.type==='income'?'pos':'neg'}">${t.type==='income'?'+':'−'}${fmt(t.amount)}</td>
+  </tr>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// CHARTS
+// ═══════════════════════════════════════════════════════
+let charts={};
+function destroyChart(key) { if(charts[key]){charts[key].destroy();charts[key]=null;} }
+const CHART_OPTS={responsive:true,maintainAspectRatio:false,
+  plugins:{legend:{labels:{color:'#9ca3af',font:{size:11}}}},
+  scales:{x:{ticks:{color:'#6b7280',font:{size:10}},grid:{color:'#252a38'}},
+          y:{ticks:{color:'#6b7280',font:{size:10}},grid:{color:'#252a38'}}}};
+
+function renderCharts() {
+  if (!document.getElementById('s0').classList.contains('active')) return;
+
+  // Weekly bar
+  const wLabels=[],wInc=[],wExp=[];
+  for(let i=-11;i<=0;i++){
+    const {start}=getWeekBounds(state.currentWeekOffset+i);
+    wLabels.push(`T${start.getDate()}/${start.getMonth()+1}`);
+    const t=calcWeekTotals(state.currentWeekOffset+i);
+    wInc.push(t.income/1e6); wExp.push(t.expense/1e6);
+  }
+  destroyChart('weekly');
+  charts['weekly']=new Chart(document.getElementById('chartWeekly'),{
+    type:'bar',
+    data:{labels:wLabels,datasets:[
+      {label:'Thu (tr)',data:wInc,backgroundColor:'rgba(74,222,128,.7)',borderRadius:3},
+      {label:'Chi (tr)',data:wExp,backgroundColor:'rgba(248,113,113,.7)',borderRadius:3}
+    ]},
+    options:{...CHART_OPTS}
+  });
+
+  // Net worth history line
+  const nwH=state.netWorthHistory.slice(-24);
+  destroyChart('nw');
+  if (nwH.length>=1) {
+    charts['nw']=new Chart(document.getElementById('chartNetWorth'),{
+      type:'line',
+      data:{
+        labels:nwH.map(h=>fmtDateVN(h.date)),
+        datasets:[
+          {label:'Tổng (tr)',data:nwH.map(h=>h.total/1e6),borderColor:'#4ade80',backgroundColor:'rgba(74,222,128,.08)',tension:.3,fill:true,pointRadius:4},
+          {label:'CK (tr)',data:nwH.map(h=>h.ck/1e6),borderColor:'#60a5fa',tension:.3,pointRadius:3},
+          {label:'Vàng (tr)',data:nwH.map(h=>h.gold/1e6),borderColor:'#f59e0b',tension:.3,pointRadius:3},
+          {label:'CCQ (tr)',data:nwH.map(h=>h.ccq/1e6),borderColor:'#a78bfa',tension:.3,pointRadius:3},
+          {label:'Tiết kiệm (tr)',data:nwH.map(h=>h.sav/1e6),borderColor:'#34d399',tension:.3,pointRadius:3},
+        ]
+      },
+      options:{...CHART_OPTS,plugins:{legend:{labels:{color:'#9ca3af',font:{size:10}}}}}
+    });
+  } else {
+    destroyChart('nw');
+    const ctx=document.getElementById('chartNetWorth').getContext('2d');
+    ctx.clearRect(0,0,9999,9999);
+    ctx.fillStyle='#6b7280'; ctx.font='13px Inter';
+    ctx.textAlign='center';
+    ctx.fillText('Nhấn 📸 Snapshot để bắt đầu ghi lịch sử',document.getElementById('chartNetWorth').width/2,110);
+  }
+
+  // Donut - expense cats this week
+  const weekExp=state.transactions.filter(t=>inWeek(t.date)&&t.type==='expense');
+  const catMap={};
+  weekExp.forEach(t=>{catMap[t.cat]=(catMap[t.cat]||0)+t.amount;});
+  const cats=Object.keys(catMap);
+  const COLORS=['#60a5fa','#f59e0b','#f87171','#4ade80','#a78bfa','#fb923c','#34d399','#e879f9'];
+  destroyChart('donut');
+  charts['donut']=new Chart(document.getElementById('chartDonut'),{
+    type:'doughnut',
+    data:{
+      labels:cats.length?cats:['Chưa có dữ liệu'],
+      datasets:[{data:cats.length?cats.map(c=>catMap[c]):[1],
+        backgroundColor:cats.length?COLORS.slice(0,cats.length):['#252a38'],borderWidth:0}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'right',labels:{color:'#9ca3af',font:{size:11},boxWidth:12}}}}
+  });
+
+  // Asset allocation donut
+  const nw=calcNetWorth();
+  const aLabels=['Tiết kiệm','Chứng khoán','Vàng SJC','CCQ'];
+  const aData=[nw.sav,nw.ck,nw.gold,nw.ccq];
+  const aCols=['#4ade80','#60a5fa','#f59e0b','#a78bfa'];
+  destroyChart('asset');
+  charts['asset']=new Chart(document.getElementById('chartAsset'),{
+    type:'doughnut',
+    data:{labels:aLabels,datasets:[{data:aData,backgroundColor:aCols,borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'right',labels:{color:'#9ca3af',font:{size:11},boxWidth:12}}}}
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// MISC
+// ═══════════════════════════════════════════════════════
+function toggleForm(id) {
+  const el=document.getElementById(id);
+  el.style.display=el.style.display==='none'?'block':'none';
+}
+function showTab(i) {
+  document.querySelectorAll('.section').forEach((s,j)=>s.classList.toggle('active',i===j));
+  document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',i===j));
+  if (i===0) requestAnimationFrame(()=>renderCharts());
+}
+
+function renderAll() {
+  renderNetWorthBar();
+  renderOverview();
+  renderRecent();
+  renderPeriodSummary();
+  renderTxTable();
+  renderSavings();
+  renderStocks();
+  renderGold();
+  renderCCQ();
+  renderInvSummary();
+  renderRental();
+  requestAnimationFrame(()=>renderCharts());
+}
+
+function setDefaultDates() {
+  const today=fmtDate(new Date());
+  ['incDate','expDate','rentDate'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value=today;
+  });
+}
+
+function init() {
+  updateWeekLabel();
+  setDefaultDates();
+  // Set FY based on current date (Feb 25 boundary)
+  const now = new Date();
+  selectedFY = (now.getMonth() > 1 || (now.getMonth()===1 && now.getDate()>=25)) ? now.getFullYear() : now.getFullYear()-1;
+  // Fetch Supabase first, fallback to localStorage
+  fetch(SB_URL + '/rest/v1/finance_state?id=eq.main&select=data', {
+    headers: SB_HEADERS
+  })
+  .then(r => r.json())
+  .then(rows => {
+    if (rows && rows.length && rows[0].data && Object.keys(rows[0].data).length > 0) {
+      state = { ...state, ...rows[0].data };
+      try { localStorage.setItem('fin2_state', JSON.stringify(state)); } catch(e) {}
+      setSyncStatus('ok');
+    } else {
+      try {
+        const r = localStorage.getItem('fin2_state');
+        if (r) state = { ...state, ...JSON.parse(r) };
+      } catch(e) {}
+      setSyncStatus('local');
+    }
+    selectFY(selectedFY);
+    renderAll();
+  })
+  .catch(() => {
+    try {
+      const r = localStorage.getItem('fin2_state');
+      if (r) state = { ...state, ...JSON.parse(r) };
+    } catch(e) {}
+    setSyncStatus('local');
+    selectFY(selectedFY);
+    renderAll();
+  });
+}
+init();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(() => console.log('SW registered'))
+      .catch(e => console.log('SW error:', e));
+  });
+}
+</script>
+</body>
+</html>
