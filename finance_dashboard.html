@@ -617,7 +617,7 @@ function takeSnapshot() {
 
 function renderNetWorthBar() {
   const nw = calcNetWorth();
-  document.getElementById('nwTotal').textContent = fmtB(nw.total);
+  const nwTotalEl = document.getElementById('nwTotal'); if(nwTotalEl) nwTotalEl.textContent = fmtB(nw.total);
   const last = state.netWorthHistory.slice(-1)[0];
   const nwUpEl = document.getElementById('nwUpdated'); if(nwUpEl) nwUpEl.textContent = last ? `Snapshot cuối: ${fmtDateVN(last.date)}` : 'Chưa có snapshot';
   const segs = [
